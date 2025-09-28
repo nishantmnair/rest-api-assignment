@@ -1,26 +1,44 @@
 const express = require('express');
-const app = express();
-const port = 3000;
+const { randomUUID } = require('crypto');
 
-// Middleware to parse JSON bodies
+const app = express();
 app.use(express.json());
 
-// **************************************************************
-// Put your implementation here
-// If necessary to add imports, please do so in the section above
+const users = [];
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
+app.post('/users', (req, res) => {
+  const { name, email } = req.body || {};
+  if (!name || !email) return res.status(400).json({ error: 'name & email required' });
+  const user = { id: randomUUID(), name, email };
+  users.push(user);
+  res.status(201).json(user);
 });
 
-// Do not touch the code below this comment
-// **************************************************************
+app.delete('/users/:id', (req, res) => {
+  const idx = users.findIndex(u => u.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'user not found' });
+  users.splice(idx, 1);
+  res.status(204).send();
+});
 
-// Start the server (only if not in test mode)
-if (process.env.NODE_ENV !== 'test') {
-    app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
-    });
-}
+app.put('/users/:id', (req, res) => {
+  const { name, email } = req.body || {};
+  if (!name || !email) return res.status(400).json({ error: 'name & email required' });
+  const idx = users.findIndex(u => u.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'user not found' });
+  users[idx] = { id: req.params.id, name, email };
+  res.json(users[idx]);
+});
+app.get('/users/:id', (req, res) => {
+  const user = users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'user not found' });
+  res.json(user);
+});
 
-module.exports = app; // Export the app for testing
+
+
+
+const PORT = process.env.PORT || 3000;
+if (require.main === module) app.listen(PORT, () => console.log(`server on ${PORT}`));
+
+module.exports = app;
